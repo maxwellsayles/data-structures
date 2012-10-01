@@ -55,7 +55,7 @@ empty = Deque [] [] 0
 
 {-| Construct a deque of one item. -}
 singleton :: a -> Deque a
-singleton e = Deque [e] [] 0
+singleton e = Deque [e] [] 1
 
 {-| Get the front item from a non-empty deque.
 An error will occur if this deque is empty. 
