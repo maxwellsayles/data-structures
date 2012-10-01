@@ -1,4 +1,1 @@
-testing-repo
-============
-
-test repo
+Miscellaneous haskell algorithms and solutions to problems.
