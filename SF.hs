@@ -1,3 +1,8 @@
+{-|
+Example of the Stream Function arrow.  This is experimental and should
+be cleaned up.
+-}
+
 import Control.Arrow
 import Control.Category
 import Prelude hiding ((.), id)
@@ -38,10 +43,6 @@ filterA f = listcase ^>> arr id ||| ((f &&& arr id) *** filterA f >>^ cons)
 
 filterA' f = listcase ^>> arr id ||| (helper >>^ snd ||| uncurry (:))
     where helper = (((f >>^ boolcase) &&& arr id) *** filterA' f) >>^ assoc >>> app
-
-filterA'' f = listcase ^>> arr id ||| (helper >>^ snd ||| uncurry (:))
-    where helper = (((f >>^ boolcase) &&& arr id) *** filterA' f) >>^ assoc >>> app
-
 
 f x = print x >> return (odd x)
 
