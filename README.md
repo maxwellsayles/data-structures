@@ -1,1 +1,0 @@
-Miscellaneous haskell algorithms and solutions to problems.
