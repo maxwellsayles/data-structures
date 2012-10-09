@@ -18,15 +18,8 @@ parSeqIO ms =
            return mvar
 
 {-|
-Runs each IO operation in the input list in parallel.
-Discards the output.
-NOTE: Each IO operation should be mutually exclusive
-as their execution order is non-deterministic
+Same as parSeqIO, but discard the result.
 -}
 parSeqIO_ :: [IO b] -> IO ()
-parSeqIO_ ms =
-    mapM_ takeMVar <=< forM ms $ \io ->
-        do mvar <- newEmptyMVar
-           forkIO (io >>= putMVar mvar)
-           return mvar
+parSeqIO_ ms = parSeqIO ms >> return ()
 

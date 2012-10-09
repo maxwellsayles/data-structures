@@ -5,8 +5,8 @@ add - O(logn)
 removeTop - O(logn)
 top - O(1)
 -}
-
-module Heap (empty,
+module Heap (Heap,
+             empty,
              singleton,
              fromList,
              toList,
@@ -14,17 +14,13 @@ module Heap (empty,
              removeTop,
              insert,
              foldr,
-             size
-            ) where
+             size) where
 
 import Prelude hiding (foldr)
 import qualified Prelude
 
 data Tree a = Leaf | Node a (Tree a) (Tree a) deriving Show
 data Heap a = Heap Int (Tree a) deriving Show
-
-
-
 
 empty :: Heap a
 empty = Heap 0 Leaf
@@ -42,8 +38,7 @@ top :: Ord a => Heap a -> Maybe a
 top (Heap _ Leaf) = Nothing
 top (Heap _ (Node v _ _)) = Just v
 
-
-{-
+{-|
 Finds and removes the last element. Then removes the top element
 and places the last element on top.  Then restores the heap property.
 -}
@@ -61,9 +56,9 @@ removeTop (Heap s root@(Node _ l r)) = Heap (s-1) $ heapify (Node v' l' r')
                      
       -- returns a new tree with the last element deleted
       deleteMin 1 _ = Leaf
-      deleteMin i (Node v l r) =
-          if even i then Node v (deleteMin i' l) r
-          else Node v l (deleteMin i' r)
+      deleteMin i (Node v l r)
+          | even i    = Node v (deleteMin i' l) r
+          | otherwise = Node v l (deleteMin i' r)
           where i' = i `div` 2
 
       -- restores the heap property when all but the root element is a heap
@@ -80,10 +75,9 @@ removeTop (Heap s root@(Node _ l r)) = Heap (s-1) $ heapify (Node v' l' r')
               else Node lv (heapify (Node pv ll lr)) r
           | pv < lv = Node lv (heapify (Node pv ll lr)) r
           | pv < rv = Node rv l (heapify (Node pv rl rr))
-          | otherwise = n
-                  
+          | otherwise = n                  
 
-{-
+{-|
 Insert element x into heap h.
   
 If current node is a Leaf, create a Node with x.
@@ -101,24 +95,18 @@ insert x (Heap s h) = Heap s' $ loop s' h
               | otherwise = 
                   if v < rv then Node rv l (Node v rl rr)
                   else Node v l r'
-              where goLeft = i `mod` 2 == 0
-                    i' = i `div` 2
+              where goLeft             = i `mod` 2 == 0
+                    i'                 = i `div` 2
                     l'@(Node lv ll lr) = loop i' l
                     r'@(Node rv rl rr) = loop i' r
-                         
 
-{-
-Fold over the elements of the heap in an arbitrary order.
--}
+{-| Fold over the elements of the heap in an arbitrary order. -}
 foldr :: (a -> b -> b) -> b -> Heap a -> b
 foldr f acc (Heap _ h) = loop h acc
-    where loop Leaf acc = acc
-          loop (Node v l r) acc = loop l $ loop r $ f v acc
+    where loop Leaf = id
+          loop (Node v l r) = loop l . loop r . f v
 
-
-{-
-Return the number of elements in the heap.
--}
+{-| Return the number of elements in the heap. -}
 size :: Heap a -> Int
 size (Heap s _) = s
 
