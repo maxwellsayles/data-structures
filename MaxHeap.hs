@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns #-}
+
 {-
 Immutable max-heap with
 
@@ -5,61 +7,68 @@ add - O(logn)
 removeTop - O(logn)
 top - O(1)
 -}
-module Heap (Heap,
-             empty,
-             singleton,
-             fromList,
-             toList,
-             top,
-             removeTop,
-             insert,
-             foldr,
-             size) where
+module MaxHeap (MaxHeap,
+                empty,
+                singleton,
+                fromList,
+                toList,
+                top,
+                removeTop,
+                insert,
+                foldr,
+                size,
+                null) where
 
-import Prelude hiding (foldr)
+import Data.Bits (shiftR)
+import Prelude hiding (foldr, null)
 import qualified Prelude
 
 data Tree a = Leaf | Node a (Tree a) (Tree a) deriving Show
-data Heap a = Heap Int (Tree a) deriving Show
 
-empty :: Heap a
-empty = Heap 0 Leaf
+data MaxHeap a = MaxHeap { size :: {-# UNPACK #-} !Int,
+                           root :: Tree a }
+                 deriving Show
 
-singleton :: a -> Heap a
-singleton x = Heap 1 (Node x Leaf Leaf)
+empty :: MaxHeap a
+empty = MaxHeap 0 Leaf
 
-fromList :: Ord a => [a] -> Heap a
+singleton :: a -> MaxHeap a
+singleton x = MaxHeap 1 (Node x Leaf Leaf)
+
+fromList :: Ord a => [a] -> MaxHeap a
 fromList = Prelude.foldr insert empty
 
-toList :: Heap a -> [a]
-toList = Heap.foldr (:) [] 
+toList :: MaxHeap a -> [a]
+toList = MaxHeap.foldr (:) []
 
-top :: Ord a => Heap a -> Maybe a
-top (Heap _ Leaf) = Nothing
-top (Heap _ (Node v _ _)) = Just v
+top :: Ord a => MaxHeap a -> Maybe a
+top (MaxHeap _ Leaf) = Nothing
+top (MaxHeap _ (Node !v _ _)) = Just v
 
 {-|
 Finds and removes the last element. Then removes the top element
 and places the last element on top.  Then restores the heap property.
 -}
-removeTop :: Ord a => Heap a -> Heap a
-removeTop (Heap _ Leaf) = Heap 0 Leaf
-removeTop (Heap 1 _) = Heap 0 Leaf
-removeTop (Heap s root@(Node _ l r)) = Heap (s-1) $ heapify (Node v' l' r')
+removeTop :: Ord a => MaxHeap a -> MaxHeap a
+removeTop (MaxHeap _ Leaf) = MaxHeap 0 Leaf
+removeTop (MaxHeap 1 _) = MaxHeap 0 Leaf
+removeTop (MaxHeap s root@(Node _ l r)) =
+    let v' = findLast s root
+        Node _ l' r' = deleteLast s root
+    in  MaxHeap (s-1) $ heapify (Node v' l' r')
     where 
-      Node _ l' r' = deleteMin s root
-      v' = findMin s root
-
       -- finds the last element in the tree
-      findMin 1 (Node v _ _) = v
-      findMin i (Node _ l r) = findMin (i `div` 2) $ if even i then l else r
+      findLast :: Int -> Tree a -> a
+      findLast 1 (Node v _ _) = v
+      findLast i (Node _ l r) = findLast (i `shiftR` 1) $
+                                if even i then l else r
                      
       -- returns a new tree with the last element deleted
-      deleteMin 1 _ = Leaf
-      deleteMin i (Node v l r)
-          | even i    = Node v (deleteMin i' l) r
-          | otherwise = Node v l (deleteMin i' r)
-          where i' = i `div` 2
+      deleteLast 1 _ = Leaf
+      deleteLast i (Node v l r)
+          | even i    = Node v (deleteLast i' l) r
+          | otherwise = Node v l (deleteLast i' r)
+          where i' = i `shiftR` 1
 
       -- restores the heap property when all but the root element is a heap
       heapify n@(Node _ Leaf Leaf) = n
@@ -84,29 +93,28 @@ If current node is a Leaf, create a Node with x.
 Otherwise, branch left or right depending on the size of the heap
 insert x at a leaf, and then restore the heap property as we return.
 -}
-insert :: Ord a => a -> Heap a -> Heap a
-insert x (Heap s h) = Heap s' $ loop s' h
+insert :: Ord a => a -> MaxHeap a -> MaxHeap a
+insert !x (MaxHeap s h) = MaxHeap s' $ loop s' h
     where s' = s+1
           loop i Leaf = Node x Leaf Leaf
           loop i (Node v l r)
-              | goLeft = 
+              | i_mod_2 == 0 =
                   if v < lv then Node lv (Node v ll lr) r
                   else Node v l' r
               | otherwise = 
                   if v < rv then Node rv l (Node v rl rr)
                   else Node v l r'
-              where goLeft             = i `mod` 2 == 0
-                    i'                 = i `div` 2
+              where (i', i_mod_2)      = i `divMod` 2
                     l'@(Node lv ll lr) = loop i' l
                     r'@(Node rv rl rr) = loop i' r
 
 {-| Fold over the elements of the heap in an arbitrary order. -}
-foldr :: (a -> b -> b) -> b -> Heap a -> b
-foldr f acc (Heap _ h) = loop h acc
+foldr :: (a -> b -> b) -> b -> MaxHeap a -> b
+foldr f acc (MaxHeap _ h) = loop h acc
     where loop Leaf = id
           loop (Node v l r) = loop l . loop r . f v
 
-{-| Return the number of elements in the heap. -}
-size :: Heap a -> Int
-size (Heap s _) = s
-
+{-| True if the heap is empty. -}
+null :: MaxHeap a -> Bool
+null (MaxHeap 0 _) = True
+null _             = False
