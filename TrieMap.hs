@@ -15,7 +15,10 @@ import Data.Maybe (isJust)
 import Data.Monoid
 import Prelude hiding (lookup, null)
 
-data TrieMap a b = TrieMap (Map a (TrieMap a b)) (Maybe b) deriving Show
+data TrieMap a b = TrieMap (Map a (TrieMap a b)) (Maybe b)
+
+instance (Show a, Show b) => Show (TrieMap a b) where
+  show = ("fromList " ++) . show . toList
 
 instance Foldable (TrieMap a) where
   foldr f z (TrieMap tm tv) =
@@ -31,7 +34,13 @@ foldrWithKey f z t = loop z t []
             Nothing -> r
             Just v -> f (reverse ks, v) r
           where r = M.foldrWithKey (\k t acc -> loop acc t (k:ks)) z m
-  
+
+fromList :: Ord a => [([a], b)] -> TrieMap a b
+fromList = foldr (uncurry insert) empty
+
+toList :: TrieMap a b -> [([a], b)]
+toList = foldrWithKey (:) []
+
 elems :: TrieMap a b -> [b]
 elems = F.foldr (:) []
   
