@@ -74,3 +74,9 @@ delete (x:xs) (TrieMap m v) =
                   then TrieMap (M.delete x m) v
                   else TrieMap (M.insert x t'' m) v
     
+lookupOne :: Ord a => a -> TrieMap a b -> Maybe (TrieMap a b)
+lookupOne x (TrieMap m _) = M.lookup x m
+
+lookupPrefix :: Ord a => [a] -> TrieMap a b -> Maybe (TrieMap a b)
+lookupPrefix [] t = Just t
+lookupPrefix (x:xs) t = lookupOne x t >>= lookupPrefix xs
